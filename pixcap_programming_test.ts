@@ -96,7 +96,6 @@ interface HistoryItem {
   actions: HistoryAction[],
 }
 
-
 class EmployeeOrgApp implements IEmployeeOrgApp {
   ceo: Employee;
   histories: HistoryItem[] = []; // use to save history of actions
@@ -134,6 +133,10 @@ class EmployeeOrgApp implements IEmployeeOrgApp {
     const oldSupervisor = this.getEmployeeByIndexPosition(oldSupervisorIndexPosition)
     const employee = this.getEmployeeByIndexPosition(indexPostionEmployee)
 
+    if (oldSupervisor.uniqueId === supervisorID) {
+      // if this employee already is subordinate of this supervisor
+      return;
+    }
     if (employee.subordinates.length) {
       //move all Subordinates of current employee to old Supervisor
       const employeeIDs: number[] = []
@@ -181,6 +184,9 @@ class EmployeeOrgApp implements IEmployeeOrgApp {
     if (this.historyIndex < 0) {
       return;
     }
+    // if(this.historyIndex === this.histories.length - 1) {
+    //   return;
+    // }
     const historyItem = this.histories[this.historyIndex];
     const actions = historyItem.actions
     if (!actions || !actions.length) {
@@ -211,13 +217,13 @@ class EmployeeOrgApp implements IEmployeeOrgApp {
    * Redo last undone action
    */
   redo() {
-    this.historyIndex++;
     if (!this.histories.length) {
       return;
     }
-    if (this.historyIndex > this.histories.length - 1) {
+    if (this.historyIndex >= this.histories.length - 1) {
       return;
     }
+    this.historyIndex++;
     const historyItem = this.histories[this.historyIndex];
     const actions = historyItem.actions
     if (!actions || !actions.length) {
