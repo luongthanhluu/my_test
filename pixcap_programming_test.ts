@@ -58,13 +58,13 @@ Must be written in Typescript.
 
 */
 interface Employee {
-  uniqueId: number;
-  name: string;
-  subordinates: Employee[];
+  uniqueId: number
+  name: string
+  subordinates: Employee[]
 }
 
 interface IEmployeeOrgApp {
-  ceo: Employee;
+  ceo: Employee
 
   /**
    * Moves the employee with employeeID (uniqueId) under a supervisor (another employee) that has supervisorID (uniqueId).
@@ -72,77 +72,77 @@ interface IEmployeeOrgApp {
    * @param employeeID
    * @param supervisorID
    */
-  move(employeeID: number, supervisorID: number): void;
+  move(employeeID: number, supervisorID: number): void
 
   /**
    * Undo last move action
    */
-  undo(): void;
+  undo(): void
 
   /**
    * Redo last undone action
    */
-  redo(): void;
+  redo(): void
 }
 
 interface HistoryAction {
-  fromIndexPosition: number[],
-  toIndexPosition: number[],
-  employeeIDs: number[],
-  fromSupervisorID: number,
+  fromIndexPosition: number[]
+  toIndexPosition: number[]
+  employeeIDs: number[]
+  fromSupervisorID: number
 }
 
 interface HistoryItem {
-  actions: HistoryAction[],
+  actions: HistoryAction[]
 }
 
 class EmployeeOrgApp implements IEmployeeOrgApp {
-  ceo: Employee;
-  histories: HistoryItem[] = []; // use to save history of actions
-  historyIndex = -1; // this is use for index current state of data in history, use for undo and redo
+  ceo: Employee
+  histories: HistoryItem[] = [] // use to save history of actions
+  historyIndex = -1 // this is use for index current state of data in history, use for undo and redo
   indexCache: Record<number, number[]> = {} // use for storage cache by employeeID with position it self
 
   constructor(ceo: Employee) {
-    this.ceo = ceo;
+    this.ceo = ceo
   }
 
   /**
- * Moves the employee with employeeID (uniqueId) under a supervisor (another employee) that has supervisorID (uniqueId).
- * E.g. move Bob (employeeID) to be subordinate of Georgina (supervisorID).
- * @param employeeID | number
- * @param supervisorID | number
- */
+   * Moves the employee with employeeID (uniqueId) under a supervisor (another employee) that has supervisorID (uniqueId).
+   * E.g. move Bob (employeeID) to be subordinate of Georgina (supervisorID).
+   * @param employeeID | number
+   * @param supervisorID | number
+   */
   move(employeeID: number, supervisorID: number) {
     const historyItem: HistoryItem = {
-      actions: []
+      actions: [],
     }
     if (employeeID === this.ceo.uniqueId) {
       //we can not move ceo
-      return;
+      return
     }
-    const indexPostionEmployee = this.getIndexPositionByEmployeeID(employeeID);
-    const indexPostionSupervisor = this.getIndexPositionByEmployeeID(supervisorID);
+    const indexPostionEmployee = this.getIndexPositionByEmployeeID(employeeID)
+    const indexPostionSupervisor = this.getIndexPositionByEmployeeID(supervisorID)
     if (!indexPostionEmployee || !indexPostionSupervisor) {
-      alert("employeeID or supervisorID not found")
-      return;
+      alert('employeeID or supervisorID not found')
+      return
     }
 
     const oldSupervisorIndexPosition = [...indexPostionEmployee]
-    oldSupervisorIndexPosition.pop();
+    oldSupervisorIndexPosition.pop()
 
     const oldSupervisor = this.getEmployeeByIndexPosition(oldSupervisorIndexPosition)
     const employee = this.getEmployeeByIndexPosition(indexPostionEmployee)
 
     if (oldSupervisor.uniqueId === supervisorID) {
       // if this employee already is subordinate of this supervisor
-      return;
+      return
     }
     if (employee.subordinates.length) {
       //move all Subordinates of current employee to old Supervisor
       const employeeIDs: number[] = []
       oldSupervisor.subordinates = oldSupervisor.subordinates.concat(employee.subordinates)
       employee.subordinates.map(e => {
-        employeeIDs.push(e.uniqueId);
+        employeeIDs.push(e.uniqueId)
         //clear cache for moved item
         this.removeIndexPositionByEmployeeIDCache(e.uniqueId)
       })
@@ -155,11 +155,11 @@ class EmployeeOrgApp implements IEmployeeOrgApp {
     }
 
     //copy employee to new Supervisor and remove from old position
-    const newEmployee = { ...employee };
-    newEmployee.subordinates = [];
+    const newEmployee = { ...employee }
+    newEmployee.subordinates = []
 
-    this.addEmployeeToSupervisorByIndexPosition(newEmployee, indexPostionSupervisor);
-    this.removeEmployeeByIndexPosition(indexPostionEmployee);
+    this.addEmployeeToSupervisorByIndexPosition(newEmployee, indexPostionSupervisor)
+    this.removeEmployeeByIndexPosition(indexPostionEmployee)
     //clear cache for moved item
     this.removeIndexPositionByEmployeeIDCache(employeeID)
 
@@ -168,7 +168,7 @@ class EmployeeOrgApp implements IEmployeeOrgApp {
       fromIndexPosition: oldSupervisorIndexPosition,
       fromSupervisorID: oldSupervisor.uniqueId,
       toIndexPosition: indexPostionSupervisor,
-      employeeIDs: [employee.uniqueId]
+      employeeIDs: [employee.uniqueId],
     })
     //add item to history
     this.addNewHistoryItem(historyItem)
@@ -179,24 +179,24 @@ class EmployeeOrgApp implements IEmployeeOrgApp {
    */
   undo() {
     if (!this.histories.length) {
-      return;
+      return
     }
     if (this.historyIndex < 0) {
-      return;
+      return
     }
     // if(this.historyIndex === this.histories.length - 1) {
     //   return;
     // }
-    const historyItem = this.histories[this.historyIndex];
+    const historyItem = this.histories[this.historyIndex]
     const actions = historyItem.actions
     if (!actions || !actions.length) {
       return
     }
     for (let i = 0; i < actions.length; i++) {
-      const action = actions[i];
+      const action = actions[i]
       const fromSupervisorIndexPosition = this.getIndexPositionByEmployeeID(action.fromSupervisorID)
       if (!fromSupervisorIndexPosition) {
-        return;
+        return
       }
       action.employeeIDs.forEach(employeeID => {
         const indexPostionEmployee = this.getIndexPositionByEmployeeID(employeeID)
@@ -204,13 +204,13 @@ class EmployeeOrgApp implements IEmployeeOrgApp {
           return
         }
         const employee = this.getEmployeeByIndexPosition(indexPostionEmployee)
-        this.addEmployeeToSupervisorByIndexPosition({ ...employee }, fromSupervisorIndexPosition);
-        this.removeEmployeeByIndexPosition(indexPostionEmployee);
+        this.addEmployeeToSupervisorByIndexPosition({ ...employee }, fromSupervisorIndexPosition)
+        this.removeEmployeeByIndexPosition(indexPostionEmployee)
         //clear cache for moved item
         this.removeIndexPositionByEmployeeIDCache(employeeID)
       })
     }
-    this.historyIndex--;
+    this.historyIndex--
   }
 
   /**
@@ -218,31 +218,31 @@ class EmployeeOrgApp implements IEmployeeOrgApp {
    */
   redo() {
     if (!this.histories.length) {
-      return;
+      return
     }
     if (this.historyIndex >= this.histories.length - 1) {
-      return;
+      return
     }
-    this.historyIndex++;
-    const historyItem = this.histories[this.historyIndex];
+    this.historyIndex++
+    const historyItem = this.histories[this.historyIndex]
     const actions = historyItem.actions
     if (!actions || !actions.length) {
       return
     }
     for (let i = 0; i < actions.length; i++) {
-      const action = actions[i];
+      const action = actions[i]
       const fromSupervisor = this.getEmployeeByIndexPosition(action.fromIndexPosition)
       action.employeeIDs.forEach(employeeID => {
-        const lastIndexPostionEmployee = this.getIndexPosition(fromSupervisor, employeeID);
+        const lastIndexPostionEmployee = this.getIndexPosition(fromSupervisor, employeeID)
         if (!lastIndexPostionEmployee) {
-          return;
+          return
         }
-        const indexPostionEmployee = action.fromIndexPosition.concat(lastIndexPostionEmployee);
+        const indexPostionEmployee = action.fromIndexPosition.concat(lastIndexPostionEmployee)
         const employee = this.getEmployeeByIndexPosition(indexPostionEmployee)
 
         // add employee to new Supervisor and remove from old Supervisor
-        this.addEmployeeToSupervisorByIndexPosition({ ...employee }, action.toIndexPosition);
-        this.removeEmployeeByIndexPosition(indexPostionEmployee);
+        this.addEmployeeToSupervisorByIndexPosition({ ...employee }, action.toIndexPosition)
+        this.removeEmployeeByIndexPosition(indexPostionEmployee)
         //clear cache for moved item
         this.removeIndexPositionByEmployeeIDCache(employeeID)
       })
@@ -251,7 +251,7 @@ class EmployeeOrgApp implements IEmployeeOrgApp {
 
   /**
    * @description add new history to cached histories list
-   * @param historyItem 
+   * @param historyItem
    */
   private addNewHistoryItem(historyItem: HistoryItem) {
     if (this.historyIndex < this.histories.length && this.histories.length) {
@@ -260,16 +260,16 @@ class EmployeeOrgApp implements IEmployeeOrgApp {
       this.histories.splice(fromIndex, numberItemNeedRemove)
     }
     this.histories.push(historyItem)
-    this.historyIndex = this.histories.length - 1;
+    this.historyIndex = this.histories.length - 1
   }
 
   /**
    * @description get emplyee data by index position
    * E.g return `ceo > subordinates[0] > subordinates[3] > subordinates[4]` when `indexPosition` = [0, 3, 4]`
-   * @param indexPosition 
+   * @param indexPosition
    */
   private getEmployeeByIndexPosition(indexPosition: number[]) {
-    let employee = this.ceo;
+    let employee = this.ceo
     indexPosition.forEach(index => {
       employee = employee.subordinates[index]
     })
@@ -281,8 +281,11 @@ class EmployeeOrgApp implements IEmployeeOrgApp {
    * @param employee | Employee
    * @param supervisorIndexPosition | number[]
    */
-  private addEmployeeToSupervisorByIndexPosition(employee: Employee, supervisorIndexPosition: number[]) {
-    let supervisor = this.ceo;
+  private addEmployeeToSupervisorByIndexPosition(
+    employee: Employee,
+    supervisorIndexPosition: number[],
+  ) {
+    let supervisor = this.ceo
     supervisorIndexPosition.forEach(index => {
       supervisor = supervisor.subordinates[index]
     })
@@ -291,12 +294,12 @@ class EmployeeOrgApp implements IEmployeeOrgApp {
 
   /**
    * @description use to remove an employee with gave position
-   * @param indexPosition 
+   * @param indexPosition
    */
   private removeEmployeeByIndexPosition(indexPosition: number[]) {
-    let supervisor = this.ceo;
+    let supervisor = this.ceo
     for (let i = 0; i < indexPosition.length - 1; i++) {
-      const index = indexPosition[i];
+      const index = indexPosition[i]
       supervisor = supervisor.subordinates[index]
     }
     supervisor.subordinates.splice(indexPosition[indexPosition.length - 1], 1)
@@ -308,7 +311,7 @@ class EmployeeOrgApp implements IEmployeeOrgApp {
    * @param data | number[]
    */
   private setIndexPositionByEmployeeIDCache(employeeId: number, data: number[]): void {
-    this.indexCache[employeeId] = data;
+    this.indexCache[employeeId] = data
   }
 
   /**
@@ -334,14 +337,14 @@ class EmployeeOrgApp implements IEmployeeOrgApp {
    * @param employeeId | number
    */
   private getIndexPositionByEmployeeID(employeeId: number): number[] | null {
-    let indexPosition = this.getIndexPositionByEmployeeIDCache(employeeId);
+    let indexPosition = this.getIndexPositionByEmployeeIDCache(employeeId)
     if (!indexPosition) {
       indexPosition = this.getIndexPosition(this.ceo, employeeId)
       if (indexPosition) {
         this.setIndexPositionByEmployeeIDCache(employeeId, indexPosition)
       }
     }
-    return indexPosition;
+    return indexPosition
   }
 
   /**
@@ -351,7 +354,11 @@ class EmployeeOrgApp implements IEmployeeOrgApp {
    * @param employeeId | number
    * @param indexPosition | number[]
    */
-  private getIndexPosition(data: Employee, employeeId: number, indexPosition: number[] = []): number[] | null {
+  private getIndexPosition(
+    data: Employee,
+    employeeId: number,
+    indexPosition: number[] = [],
+  ): number[] | null {
     this.setIndexPositionByEmployeeIDCache(data.uniqueId, indexPosition)
     if (data.uniqueId === employeeId) {
       return indexPosition
@@ -360,9 +367,13 @@ class EmployeeOrgApp implements IEmployeeOrgApp {
       return null
     }
     for (let i = 0; i < data.subordinates.length; i++) {
-      const tmpIndexPosition = [...indexPosition];
-      tmpIndexPosition.push(i);
-      const newIndexPostion = this.getIndexPosition(data.subordinates[i], employeeId, tmpIndexPosition);
+      const tmpIndexPosition = [...indexPosition]
+      tmpIndexPosition.push(i)
+      const newIndexPostion = this.getIndexPosition(
+        data.subordinates[i],
+        employeeId,
+        tmpIndexPosition,
+      )
       if (newIndexPostion) {
         return newIndexPostion
       }
